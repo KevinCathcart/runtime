@@ -57,6 +57,7 @@ public:
     PTRARRAYREF rgFilename;
     I4ARRAYREF rgiLineNumber;
     I4ARRAYREF rgiColumnNumber;
+    BOOLARRAYREF rgiIsFileLayout;
 
     BOOLARRAYREF rgiLastFrameFromForeignExceptionStackTrace;
 
