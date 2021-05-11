@@ -406,6 +406,10 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         // Allocate memory for the ColumnNumbers
         OBJECTREF columnNumbers = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
         SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiColumnNumber), (OBJECTREF)columnNumbers);
+        
+        // Allocate memory for the IsFileLayout flags
+        OBJECTREF isFileLayouts = AllocatePrimitiveArray(ELEMENT_TYPE_BOOLEAN, data.cElements);
+        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiIsFileLayout), (OBJECTREF)isFileLayouts);
 
         // Allocate memory for the flag indicating if this frame represents the last one from a foreign
         // exception stack trace provided we have any such frames. Otherwise, set it to null.
@@ -743,6 +747,14 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                         {
                             OBJECTREF obj = (OBJECTREF)StringObject::NewString(assemblyPath);
                             pStackFrameHelper->rgAssemblyPath->SetAt(iNumValidFrames, obj);
+                        }
+
+                        // Set flag indicating PE file in memory has the on disk layout
+                        if(!pModule->IsReflection())
+                        {
+                            // This flag is only available for non-dynamic assemblies.
+                            U1 *pIsFileLayout = (U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiIsFileLayout)->GetDirectPointerToNonObjectElements();
+                            pIsFileLayout[iNumValidFrames] = (U1) pPEFile->GetLoaded()->IsFlat();
                         }
                     }
                 }

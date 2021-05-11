@@ -34,6 +34,7 @@ namespace System.Diagnostics
         private string?[]? rgFilename;
         private int[]? rgiLineNumber;
         private int[]? rgiColumnNumber;
+        private bool[]? rgiIsFileLayout;
         private bool[]? rgiLastFrameFromForeignExceptionStackTrace;
         private int iFrameCount;
 #pragma warning restore 414
@@ -64,6 +65,7 @@ namespace System.Diagnostics
             rgFilename = null;
             rgiLineNumber = null;
             rgiColumnNumber = null;
+            rgiIsFileLayout = null;
 
             rgiLastFrameFromForeignExceptionStackTrace = null;
 
@@ -139,7 +141,7 @@ namespace System.Diagnostics
                     {
                         s_getSourceLineInfo!(rgAssembly![index], rgAssemblyPath![index]!, rgLoadedPeAddress![index], rgiLoadedPeSize![index],
                             rgInMemoryPdbAddress![index], rgiInMemoryPdbSize![index], rgiMethodToken![index],
-                            rgiILOffset![index], out rgFilename![index], out rgiLineNumber![index], out rgiColumnNumber![index]);
+                            rgiILOffset![index], rgiIsFileLayout![index], out rgFilename![index], out rgiLineNumber![index], out rgiColumnNumber![index]);
                     }
                 }
             }
