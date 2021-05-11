@@ -50,14 +50,14 @@ namespace System.Diagnostics
         /// <param name="sourceLine">line number return</param>
         /// <param name="sourceColumn">column return</param>
         internal void GetSourceLineInfo(Assembly assembly, string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize,
-            IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset,
+            IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset, bool isFileLayout,
             out string? sourceFile, out int sourceLine, out int sourceColumn)
         {
             sourceFile = null;
             sourceLine = 0;
             sourceColumn = 0;
 
-            MetadataReader? reader = TryGetReader(assembly, assemblyPath, loadedPeAddress, loadedPeSize, inMemoryPdbAddress, inMemoryPdbSize);
+            MetadataReader? reader = TryGetReader(assembly, assemblyPath, loadedPeAddress, loadedPeSize, inMemoryPdbAddress, inMemoryPdbSize, isFileLayout);
             if (reader != null)
             {
                 Handle handle = MetadataTokens.Handle(methodToken);
@@ -113,7 +113,7 @@ namespace System.Diagnostics
         /// underlying ConditionalWeakTable doesn't keep the assembly alive, so cached types will be
         /// correctly invalidated when the Assembly is unloaded by the GC.
         /// </remarks>
-        private unsafe MetadataReader? TryGetReader(Assembly assembly, string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize, IntPtr inMemoryPdbAddress, int inMemoryPdbSize)
+        private unsafe MetadataReader? TryGetReader(Assembly assembly, string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize, IntPtr inMemoryPdbAddress, int inMemoryPdbSize, bool isFileLayout)
         {
             if ((loadedPeAddress == IntPtr.Zero || assemblyPath == null) && inMemoryPdbAddress == IntPtr.Zero)
             {
@@ -127,7 +127,7 @@ namespace System.Diagnostics
             {
                 return (inMemoryPdbAddress != IntPtr.Zero) ?
                             TryOpenReaderForInMemoryPdb(inMemoryPdbAddress, inMemoryPdbSize) :
-                            TryOpenReaderFromAssemblyFile(assemblyPath!, loadedPeAddress, loadedPeSize);
+                            TryOpenReaderFromAssemblyFile(assemblyPath!, loadedPeAddress, loadedPeSize, isFileLayout);
             });
 
             // The reader has already been open, so this doesn't throw.
@@ -160,13 +160,13 @@ namespace System.Diagnostics
             }
         }
 
-        private static unsafe PEReader? TryGetPEReader(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize)
+        private static unsafe PEReader? TryGetPEReader(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize, bool isFileLayout)
         {
-            // TODO: https://github.com/dotnet/runtime/issues/18423
-            //if (loadedPeAddress != IntPtr.Zero && loadedPeSize > 0)
-            //{
-            //    return new PEReader((byte*)loadedPeAddress, loadedPeSize, isLoadedImage: true);
-            //}
+            
+            if (loadedPeAddress != IntPtr.Zero && loadedPeSize > 0)
+            {
+                return new PEReader((byte*)loadedPeAddress, loadedPeSize, isLoadedImage: !isFileLayout);
+            }
 
             Stream? peStream = TryOpenFile(assemblyPath);
             if (peStream != null)
@@ -177,9 +177,9 @@ namespace System.Diagnostics
             return null;
         }
 
-        private static MetadataReaderProvider? TryOpenReaderFromAssemblyFile(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize)
+        private static MetadataReaderProvider? TryOpenReaderFromAssemblyFile(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize, bool isFileLayout)
         {
-            using (var peReader = TryGetPEReader(assemblyPath, loadedPeAddress, loadedPeSize))
+            using (var peReader = TryGetPEReader(assemblyPath, loadedPeAddress, loadedPeSize, isFileLayout))
             {
                 if (peReader == null)
                 {
